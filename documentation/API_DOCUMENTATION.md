@@ -1282,4 +1282,4 @@ pytest --cov=app
 
 - Check the GitHub Issues
 - Join our Discord community
-- Email support: support@example.com
+- Email support: mm.rizqullah@gmail.com
