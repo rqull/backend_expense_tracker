@@ -31,7 +31,7 @@ A RESTful API built with FastAPI for tracking personal expenses, managing budget
 1. **Clone the repository**
 
    ```powershell
-   git clone <repository-url>
+   git clone https://github.com/rqull/backend_expense_tracker.git
    cd expanse_tracker/backend
    ```
 
