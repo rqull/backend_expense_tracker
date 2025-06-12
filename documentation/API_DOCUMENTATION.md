@@ -36,7 +36,7 @@
 1. **Clone or Download the Project**
 
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/rqull/backend_expense_tracker.git
    cd expanse_tracker/backend
    ```
 
