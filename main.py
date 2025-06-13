@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import engine
 from app.models import Base
-from app.routers import categories, expenses, budgets, accounts, tags, recurring, health
+from app.routers import categories, expenses, budgets, accounts, tags, recurring, health, auth
 
 app = FastAPI(title="Expense Tracker API")
 
@@ -22,6 +22,7 @@ app.add_middleware(
 Base.metadata.create_all(bind=engine)
 
 # Include routers
+app.include_router(auth.router)        # Add this line
 app.include_router(health.router)      
 app.include_router(categories.router)
 app.include_router(expenses.router)

@@ -1,5 +1,5 @@
 # backend/app/models.py
-from sqlalchemy import Column, Integer, String, Text, Date, DateTime, ForeignKey, Numeric, UniqueConstraint, func
+from sqlalchemy import Column, Integer, String, Text, Date, DateTime, ForeignKey, Numeric, UniqueConstraint, func, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
@@ -79,7 +79,10 @@ class RecurringExpense(Base):
 class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
-    email = Column(String(150), unique=True, nullable=False)
-    hashed_password = Column(String(255), nullable=False)
+    username = Column(String(50), unique=True, index=True, nullable=False)
+    email = Column(String(100), unique=True, index=True, nullable=False)
+    full_name = Column(String(100))
+    hashed_password = Column(String(100), nullable=False)
+    is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())

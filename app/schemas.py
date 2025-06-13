@@ -3,6 +3,36 @@ from datetime import date, datetime
 from pydantic import BaseModel, Field, validator
 from decimal import Decimal
 
+# Auth Schemas
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+class TokenData(BaseModel):
+    username: Optional[str] = None
+
+class UserBase(BaseModel):
+    username: str
+    email: str
+    full_name: Optional[str] = None
+    is_active: bool = True
+
+class UserCreate(UserBase):
+    password: str
+
+class UserUpdate(BaseModel):
+    email: Optional[str] = None
+    full_name: Optional[str] = None
+    password: Optional[str] = None
+
+class User(UserBase):
+    id: int
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        orm_mode = True
+
 # Category Schemas
 class CategoryBase(BaseModel):
     name: str
@@ -188,25 +218,6 @@ class RecurringExpense(RecurringExpenseBase):
     created_at: datetime
     updated_at: datetime
     category: Category
-
-    class Config:
-        orm_mode = True
-
-# User schemas if you decide to implement authentication later
-class UserBase(BaseModel):
-    email: str
-
-class UserCreate(UserBase):
-    password: str
-
-class UserUpdate(BaseModel):
-    email: Optional[str] = None
-    password: Optional[str] = None
-
-class User(UserBase):
-    id: int
-    created_at: datetime
-    updated_at: datetime
 
     class Config:
         orm_mode = True
