@@ -1,35 +1,79 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import List
+from fastapi.responses import JSONResponse
 
 from .. import crud, schemas
 from ..database import get_db
 
 router = APIRouter(
     prefix="/tags",
-    tags=["tags"]
+    tags=["Tags"]
 )
 
-@router.post("/", response_model=schemas.Tag, status_code=status.HTTP_201_CREATED)
+@router.post("/")
 def create_tag(tag: schemas.TagCreate, db: Session = Depends(get_db)):
-    return crud.create_tag(db=db, tag=tag)
+    new_tag = crud.create_tag(db=db, tag=tag)
+    return JSONResponse(
+        status_code=201,
+        content={
+            "status": "success",
+            "data": schemas.Tag.from_orm(new_tag).dict(),
+            "message": "Tag created successfully"
+        }
+    )
 
-@router.get("/", response_model=List[schemas.Tag])
+@router.get("/")
 def read_tags(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     tags = crud.get_tags(db, skip=skip, limit=limit)
-    return tags
+    return JSONResponse(
+        status_code=200,
+        content={
+            "status": "success",
+            "data": {
+                "items": [schemas.Tag.from_orm(tag).dict() for tag in tags],
+                "total": len(tags),
+                "page": 1,
+                "size": len(tags),
+                "pages": 1
+            },
+            "message": None
+        }
+    )
 
-@router.get("/{tag_id}", response_model=schemas.Tag)
+@router.get("/{tag_id}")
 def read_tag(tag_id: int, db: Session = Depends(get_db)):
     db_tag = crud.get_tag(db, tag_id=tag_id)
     if db_tag is None:
         raise HTTPException(status_code=404, detail="Tag not found")
-    return db_tag
+    return JSONResponse(
+        status_code=200,
+        content={
+            "status": "success",
+            "data": schemas.Tag.from_orm(db_tag).dict(),
+            "message": None
+        }
+    )
 
-@router.put("/{tag_id}", response_model=schemas.Tag)
+@router.put("/{tag_id}")
 def update_tag(tag_id: int, tag: schemas.TagUpdate, db: Session = Depends(get_db)):
-    return crud.update_tag(db=db, tag_id=tag_id, tag=tag)
+    updated = crud.update_tag(db=db, tag_id=tag_id, tag=tag)
+    return JSONResponse(
+        status_code=200,
+        content={
+            "status": "success",
+            "data": schemas.Tag.from_orm(updated).dict(),
+            "message": "Tag updated successfully"
+        }
+    )
 
-@router.delete("/{tag_id}", status_code=status.HTTP_200_OK)
+@router.delete("/{tag_id}")
 def delete_tag(tag_id: int, db: Session = Depends(get_db)):
-    return crud.delete_tag(db=db, tag_id=tag_id)
+    crud.delete_tag(db=db, tag_id=tag_id)
+    return JSONResponse(
+        status_code=200,
+        content={
+            "status": "success",
+            "data": None,
+            "message": "Tag deleted successfully"
+        }
+    )

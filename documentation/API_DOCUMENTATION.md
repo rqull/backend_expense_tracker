@@ -160,7 +160,7 @@ Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 ## API Response Format
 
-All API endpoints follow a consistent response format:
+Semua endpoint API mengembalikan respons dalam format JSON yang konsisten menggunakan `JSONResponse`. Format respons terdiri dari tiga bagian utama:
 
 ```json
 {
@@ -169,6 +169,15 @@ All API endpoints follow a consistent response format:
   "message": "Optional message describing the result"
 }
 ```
+
+### Status Code
+
+- `201`: Created (untuk operasi POST yang berhasil)
+- `200`: OK (untuk operasi GET, PUT, DELETE yang berhasil)
+- `400`: Bad Request (untuk input yang tidak valid)
+- `401`: Unauthorized (untuk autentikasi yang gagal)
+- `404`: Not Found (untuk resource yang tidak ditemukan)
+- `500`: Internal Server Error (untuk kesalahan server)
 
 ### Success Response Example
 
@@ -223,12 +232,13 @@ All API endpoints follow a consistent response format:
 
 ### Pagination
 
-For endpoints that return lists, the following query parameters are supported:
+Untuk endpoint yang mengembalikan daftar, format respons selalu menyertakan informasi pagination:
 
-- `page` (optional): Page number (default: 1)
-- `size` (optional): Items per page (default: 10)
-- `sort` (optional): Sort field (default varies by endpoint)
-- `order` (optional): Sort order, "asc" or "desc" (default: "asc")
+- `items`: Array dari item yang diminta
+- `total`: Total jumlah item
+- `page`: Halaman saat ini
+- `size`: Jumlah item per halaman
+- `pages`: Total jumlah halaman
 
 ## API Endpoints
 
@@ -353,10 +363,8 @@ Retrieve all expense categories.
 
 **Query Parameters:**
 
-- `page` (optional): Page number (default: 1)
-- `size` (optional): Items per page (default: 10)
-- `sort` (optional): Sort field (default: "name")
-- `order` (optional): Sort order, "asc" or "desc" (default: "asc")
+- `skip` (optional): Number of records to skip (default: 0)
+- `limit` (optional): Maximum number of records to return (default: 100)
 
 **Response:**
 
@@ -423,6 +431,86 @@ Retrieve a specific category by ID.
 }
 ```
 
+#### POST /categories/
+
+Create a new category.
+
+**Request Body:**
+
+```json
+{
+  "name": "Entertainment",
+  "description": "Movies, games, and other entertainment"
+}
+```
+
+**Response:**
+
+```json
+{
+  "status": "success",
+  "data": {
+    "id": 3,
+    "name": "Entertainment",
+    "description": "Movies, games, and other entertainment",
+    "created_at": "2025-06-14T10:00:00",
+    "updated_at": "2025-06-14T10:00:00"
+  },
+  "message": "Category created successfully"
+}
+```
+
+#### PUT /categories/{id}
+
+Update an existing category.
+
+**Path Parameters:**
+
+- `id`: The unique identifier of the category
+
+**Request Body:**
+
+```json
+{
+  "name": "Entertainment & Leisure",
+  "description": "Updated description for entertainment category"
+}
+```
+
+**Response:**
+
+```json
+{
+  "status": "success",
+  "data": {
+    "id": 3,
+    "name": "Entertainment & Leisure",
+    "description": "Updated description for entertainment category",
+    "created_at": "2025-06-14T10:00:00",
+    "updated_at": "2025-06-14T10:15:00"
+  },
+  "message": "Category updated successfully"
+}
+```
+
+#### DELETE /categories/{id}
+
+Delete a category.
+
+**Path Parameters:**
+
+- `id`: The unique identifier of the category
+
+**Response:**
+
+```json
+{
+  "status": "success",
+  "data": null,
+  "message": "Category deleted successfully"
+}
+```
+
 ### Expenses
 
 Expenses represent individual financial transactions.
@@ -433,10 +521,8 @@ Retrieve all expenses with optional filtering.
 
 **Query Parameters:**
 
-- `page` (optional): Page number (default: 1)
-- `size` (optional): Items per page (default: 10)
-- `sort` (optional): Sort field (default: "date")
-- `order` (optional): Sort order, "asc" or "desc" (default: "desc")
+- `skip` (optional): Number of records to skip (default: 0)
+- `limit` (optional): Maximum number of records to return (default: 100)
 - `category_id` (optional): Filter expenses by category ID
 - `account_id` (optional): Filter expenses by account ID
 - `start_date` (optional): Filter expenses with date >= start_date (format: YYYY-MM-DD)

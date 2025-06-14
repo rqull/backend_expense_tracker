@@ -49,14 +49,14 @@ if os.getenv("DEBUG", "False").lower() == "true":
     Base.metadata.create_all(bind=engine)
 
 # Include routers with tags and prefixes
-app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
-app.include_router(health.router, prefix="/health", tags=["Health"])
-app.include_router(categories.router, prefix="/categories", tags=["Categories"])
-app.include_router(expenses.router, prefix="/expenses", tags=["Expenses"])
-app.include_router(budgets.router, prefix="/budgets", tags=["Budgets"])
-app.include_router(accounts.router, prefix="/accounts", tags=["Accounts"])
-app.include_router(tags.router, prefix="/tags", tags=["Tags"])
-app.include_router(recurring.router, prefix="/recurring", tags=["Recurring Expenses"])
+app.include_router(auth.router)
+app.include_router(health.router)
+app.include_router(categories.router)
+app.include_router(expenses.router)
+app.include_router(budgets.router)
+app.include_router(accounts.router)
+app.include_router(tags.router)
+app.include_router(recurring.router)
 
 @app.get("/")
 async def root():

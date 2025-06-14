@@ -2,7 +2,7 @@ from datetime import timedelta
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-
+from fastapi.responses import JSONResponse
 from .. import crud, schemas
 from ..database import get_db
 from ..utils.security import (
@@ -15,10 +15,10 @@ from ..utils.security import (
 
 router = APIRouter(
     prefix="/auth",
-    tags=["authentication"]
+    tags=["Authentication"]
 )
 
-@router.post("/register", response_model=schemas.User)
+@router.post("/register")
 def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
     # Check if user exists
     db_user = crud.get_user_by_username(db, username=user.username)
@@ -38,7 +38,15 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
     
     # Create new user
     hashed_password = get_password_hash(user.password)
-    return crud.create_user(db=db, user=user, hashed_password=hashed_password)
+    new_user = crud.create_user(db=db, user=user, hashed_password=hashed_password)
+    return JSONResponse(
+        status_code=201,
+        content={
+            "status": "success",
+            "data": schemas.User.from_orm(new_user).dict(),
+            "message": "User registered successfully"
+        }
+    )
 
 @router.post("/token", response_model=schemas.Token)
 async def login_for_access_token(
