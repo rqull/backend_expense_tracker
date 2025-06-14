@@ -156,6 +156,78 @@ Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 - Access tokens expire after 30 minutes
 - You need to login again to get a new token
 
+## API Response Format
+
+All API endpoints follow a consistent response format:
+
+```json
+{
+  "status": "success" | "error",
+  "data": <response_data>,
+  "message": "Optional message describing the result"
+}
+```
+
+### Success Response Example
+
+```json
+{
+  "status": "success",
+  "data": {
+    "id": 1,
+    "name": "Food",
+    "description": "Groceries and eating out"
+  },
+  "message": "Category created successfully"
+}
+```
+
+### Error Response Example
+
+```json
+{
+  "status": "error",
+  "data": null,
+  "message": "Category with ID 123 not found"
+}
+```
+
+### List Response Example
+
+```json
+{
+  "status": "success",
+  "data": {
+    "items": [
+      {
+        "id": 1,
+        "name": "Food",
+        "description": "Groceries and eating out"
+      },
+      {
+        "id": 2,
+        "name": "Transportation",
+        "description": "Public transport and fuel"
+      }
+    ],
+    "total": 2,
+    "page": 1,
+    "size": 10,
+    "pages": 1
+  },
+  "message": null
+}
+```
+
+### Pagination
+
+For endpoints that return lists, the following query parameters are supported:
+
+- `page` (optional): Page number (default: 1)
+- `size` (optional): Items per page (default: 10)
+- `sort` (optional): Sort field (default varies by endpoint)
+- `order` (optional): Sort order, "asc" or "desc" (default: "asc")
+
 ## API Endpoints
 
 ### Authentication Endpoints
@@ -178,10 +250,24 @@ Register a new user account.
 
 ```json
 {
-  "id": 1,
-  "username": "johndoe",
-  "email": "john@example.com",
-  "created_at": "2025-06-13T10:00:00"
+  "status": "success",
+  "data": {
+    "id": 1,
+    "username": "johndoe",
+    "email": "john@example.com",
+    "created_at": "2025-06-13T10:00:00"
+  },
+  "message": "User registered successfully"
+}
+```
+
+**Error Response:**
+
+```json
+{
+  "status": "error",
+  "data": null,
+  "message": "Username already registered"
 }
 ```
 
@@ -202,8 +288,23 @@ Login to get access token.
 
 ```json
 {
-  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "token_type": "bearer"
+  "status": "success",
+  "data": {
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "token_type": "bearer",
+    "expires_in": 1800
+  },
+  "message": "Successfully logged in"
+}
+```
+
+**Error Response:**
+
+```json
+{
+  "status": "error",
+  "data": null,
+  "message": "Invalid username or password"
 }
 ```
 
@@ -221,39 +322,28 @@ Authorization: Bearer <your-token>
 
 ```json
 {
-  "id": 1,
-  "username": "johndoe",
-  "email": "john@example.com",
-  "created_at": "2025-06-13T10:00:00"
+  "status": "success",
+  "data": {
+    "id": 1,
+    "username": "johndoe",
+    "email": "john@example.com",
+    "created_at": "2025-06-13T10:00:00"
+  },
+  "message": null
 }
 ```
 
-### Protected Endpoints
-
-All endpoints below require authentication. Include the JWT token in the Authorization header:
-
-```
-Authorization: Bearer <your-token>
-```
-
-### Health Check
-
-#### GET /health
-
-Checks if the API is running.
-
-**Response:**
+**Error Response:**
 
 ```json
 {
-  "status": "ok",
-  "timestamp": "2025-06-12T10:00:00.123456"
+  "status": "error",
+  "data": null,
+  "message": "Invalid or expired token"
 }
 ```
 
 ### Categories
-
-Categories help organize expenses into meaningful groups.
 
 #### GET /categories/
 
@@ -261,28 +351,40 @@ Retrieve all expense categories.
 
 **Query Parameters:**
 
-- `skip` (optional): Number of records to skip (default: 0)
-- `limit` (optional): Maximum number of records to return (default: 100)
+- `page` (optional): Page number (default: 1)
+- `size` (optional): Items per page (default: 10)
+- `sort` (optional): Sort field (default: "name")
+- `order` (optional): Sort order, "asc" or "desc" (default: "asc")
 
 **Response:**
 
 ```json
-[
-  {
-    "id": 1,
-    "name": "Food",
-    "description": "Groceries and eating out",
-    "created_at": "2025-01-01T00:00:00",
-    "updated_at": "2025-01-01T00:00:00"
+{
+  "status": "success",
+  "data": {
+    "items": [
+      {
+        "id": 1,
+        "name": "Food",
+        "description": "Groceries and eating out",
+        "created_at": "2025-01-01T00:00:00",
+        "updated_at": "2025-01-01T00:00:00"
+      },
+      {
+        "id": 2,
+        "name": "Transportation",
+        "description": "Public transport and fuel",
+        "created_at": "2025-01-01T00:00:00",
+        "updated_at": "2025-01-01T00:00:00"
+      }
+    ],
+    "total": 2,
+    "page": 1,
+    "size": 10,
+    "pages": 1
   },
-  {
-    "id": 2,
-    "name": "Transportation",
-    "description": "Public transport and fuel",
-    "created_at": "2025-01-01T00:00:00",
-    "updated_at": "2025-01-01T00:00:00"
-  }
-]
+  "message": null
+}
 ```
 
 #### GET /categories/{id}
@@ -297,81 +399,25 @@ Retrieve a specific category by ID.
 
 ```json
 {
-  "id": 1,
-  "name": "Food",
-  "description": "Groceries and eating out",
-  "created_at": "2025-01-01T00:00:00",
-  "updated_at": "2025-01-01T00:00:00"
+  "status": "success",
+  "data": {
+    "id": 1,
+    "name": "Food",
+    "description": "Groceries and eating out",
+    "created_at": "2025-01-01T00:00:00",
+    "updated_at": "2025-01-01T00:00:00"
+  },
+  "message": null
 }
 ```
 
-#### POST /categories/
-
-Create a new expense category.
-
-**Request Body:**
+**Error Response:**
 
 ```json
 {
-  "name": "Entertainment",
-  "description": "Movies, games, and other entertainment expenses"
-}
-```
-
-**Response:**
-
-```json
-{
-  "id": 3,
-  "name": "Entertainment",
-  "description": "Movies, games, and other entertainment expenses",
-  "created_at": "2025-06-12T10:30:00",
-  "updated_at": "2025-06-12T10:30:00"
-}
-```
-
-#### PUT /categories/{id}
-
-Update an existing category.
-
-**Path Parameters:**
-
-- `id`: The unique identifier of the category
-
-**Request Body:**
-
-```json
-{
-  "name": "Entertainment & Leisure",
-  "description": "Updated description"
-}
-```
-
-**Response:**
-
-```json
-{
-  "id": 3,
-  "name": "Entertainment & Leisure",
-  "description": "Updated description",
-  "created_at": "2025-06-12T10:30:00",
-  "updated_at": "2025-06-12T10:45:00"
-}
-```
-
-#### DELETE /categories/{id}
-
-Delete a category.
-
-**Path Parameters:**
-
-- `id`: The unique identifier of the category
-
-**Response:**
-
-```json
-{
-  "message": "Category deleted successfully"
+  "status": "error",
+  "data": null,
+  "message": "Category not found"
 }
 ```
 
@@ -385,8 +431,10 @@ Retrieve all expenses with optional filtering.
 
 **Query Parameters:**
 
-- `skip` (optional): Number of records to skip (default: 0)
-- `limit` (optional): Maximum number of records to return (default: 100)
+- `page` (optional): Page number (default: 1)
+- `size` (optional): Items per page (default: 10)
+- `sort` (optional): Sort field (default: "date")
+- `order` (optional): Sort order, "asc" or "desc" (default: "desc")
 - `category_id` (optional): Filter expenses by category ID
 - `account_id` (optional): Filter expenses by account ID
 - `start_date` (optional): Filter expenses with date >= start_date (format: YYYY-MM-DD)
@@ -395,17 +443,63 @@ Retrieve all expenses with optional filtering.
 **Response:**
 
 ```json
-[
-  {
+{
+  "status": "success",
+  "data": {
+    "items": [
+      {
+        "id": 1,
+        "amount": "35.50",
+        "date": "2025-06-10",
+        "description": "Grocery shopping",
+        "category": {
+          "id": 1,
+          "name": "Food",
+          "description": "Groceries and eating out"
+        },
+        "account": {
+          "id": 2,
+          "name": "Bank Account",
+          "initial_balance": "2500.00"
+        },
+        "tags": [
+          {
+            "id": 1,
+            "name": "Essential"
+          }
+        ],
+        "receipt_path": null,
+        "created_at": "2025-06-10T15:30:00",
+        "updated_at": "2025-06-10T15:30:00"
+      }
+    ],
+    "total": 1,
+    "page": 1,
+    "size": 10,
+    "pages": 1
+  },
+  "message": null
+}
+```
+
+#### GET /expenses/{id}
+
+Retrieve a specific expense by ID.
+
+**Path Parameters:**
+
+- `id`: The unique identifier of the expense
+
+**Response:**
+
+```json
+{
+  "status": "success",
+  "data": {
     "id": 1,
     "amount": "35.50",
     "date": "2025-06-10",
     "description": "Grocery shopping",
-    "category_id": 1,
-    "account_id": 2,
-    "receipt_path": null,
-    "created_at": "2025-06-10T15:30:00",
-    "updated_at": "2025-06-10T15:30:00",
     "category": {
       "id": 1,
       "name": "Food",
@@ -421,48 +515,12 @@ Retrieve all expenses with optional filtering.
         "id": 1,
         "name": "Essential"
       }
-    ]
-  }
-]
-```
-
-#### GET /expenses/{id}
-
-Retrieve a specific expense by ID.
-
-**Path Parameters:**
-
-- `id`: The unique identifier of the expense
-
-**Response:**
-
-```json
-{
-  "id": 1,
-  "amount": "35.50",
-  "date": "2025-06-10",
-  "description": "Grocery shopping",
-  "category_id": 1,
-  "account_id": 2,
-  "receipt_path": null,
-  "created_at": "2025-06-10T15:30:00",
-  "updated_at": "2025-06-10T15:30:00",
-  "category": {
-    "id": 1,
-    "name": "Food",
-    "description": "Groceries and eating out"
+    ],
+    "receipt_path": null,
+    "created_at": "2025-06-10T15:30:00",
+    "updated_at": "2025-06-10T15:30:00"
   },
-  "account": {
-    "id": 2,
-    "name": "Bank Account",
-    "initial_balance": "2500.00"
-  },
-  "tags": [
-    {
-      "id": 1,
-      "name": "Essential"
-    }
-  ]
+  "message": null
 }
 ```
 
@@ -488,35 +546,37 @@ Create a new expense.
 
 ```json
 {
-  "id": 5,
-  "amount": "42.99",
-  "date": "2025-06-12",
-  "description": "Dinner at restaurant",
-  "category_id": 1,
-  "account_id": 2,
-  "receipt_path": null,
-  "created_at": "2025-06-12T11:15:00",
-  "updated_at": "2025-06-12T11:15:00",
-  "category": {
-    "id": 1,
-    "name": "Food",
-    "description": "Groceries and eating out"
-  },
-  "account": {
-    "id": 2,
-    "name": "Bank Account",
-    "initial_balance": "2500.00"
-  },
-  "tags": [
-    {
+  "status": "success",
+  "data": {
+    "id": 5,
+    "amount": "42.99",
+    "date": "2025-06-12",
+    "description": "Dinner at restaurant",
+    "category": {
       "id": 1,
-      "name": "Essential"
+      "name": "Food",
+      "description": "Groceries and eating out"
     },
-    {
-      "id": 4,
-      "name": "Personal"
-    }
-  ]
+    "account": {
+      "id": 2,
+      "name": "Bank Account",
+      "initial_balance": "2500.00"
+    },
+    "tags": [
+      {
+        "id": 1,
+        "name": "Essential"
+      },
+      {
+        "id": 4,
+        "name": "Personal"
+      }
+    ],
+    "receipt_path": null,
+    "created_at": "2025-06-12T11:15:00",
+    "updated_at": "2025-06-12T11:15:00"
+  },
+  "message": "Expense created successfully"
 }
 ```
 
@@ -542,39 +602,41 @@ Update an existing expense.
 
 ```json
 {
-  "id": 5,
-  "amount": "45.99",
-  "date": "2025-06-12",
-  "description": "Updated dinner description",
-  "category_id": 1,
-  "account_id": 2,
-  "receipt_path": null,
-  "created_at": "2025-06-12T11:15:00",
-  "updated_at": "2025-06-12T11:30:00",
-  "category": {
-    "id": 1,
-    "name": "Food",
-    "description": "Groceries and eating out"
-  },
-  "account": {
-    "id": 2,
-    "name": "Bank Account",
-    "initial_balance": "2500.00"
-  },
-  "tags": [
-    {
+  "status": "success",
+  "data": {
+    "id": 5,
+    "amount": "45.99",
+    "date": "2025-06-12",
+    "description": "Updated dinner description",
+    "category": {
       "id": 1,
-      "name": "Essential"
+      "name": "Food",
+      "description": "Groceries and eating out"
     },
-    {
+    "account": {
       "id": 2,
-      "name": "Luxury"
+      "name": "Bank Account",
+      "initial_balance": "2500.00"
     },
-    {
-      "id": 4,
-      "name": "Personal"
-    }
-  ]
+    "tags": [
+      {
+        "id": 1,
+        "name": "Essential"
+      },
+      {
+        "id": 2,
+        "name": "Luxury"
+      },
+      {
+        "id": 4,
+        "name": "Personal"
+      }
+    ],
+    "receipt_path": null,
+    "created_at": "2025-06-12T11:15:00",
+    "updated_at": "2025-06-12T11:30:00"
+  },
+  "message": "Expense updated successfully"
 }
 ```
 
@@ -590,6 +652,8 @@ Delete an expense.
 
 ```json
 {
+  "status": "success",
+  "data": null,
   "message": "Expense deleted successfully"
 }
 ```
@@ -610,22 +674,32 @@ Retrieve all budgets.
 **Response:**
 
 ```json
-[
-  {
-    "id": 1,
-    "category_id": 1,
-    "year": 2025,
-    "month": 6,
-    "amount": "300.00",
-    "created_at": "2025-06-01T00:00:00",
-    "updated_at": "2025-06-01T00:00:00",
-    "category": {
-      "id": 1,
-      "name": "Food",
-      "description": "Groceries and eating out"
-    }
-  }
-]
+{
+  "status": "success",
+  "data": {
+    "items": [
+      {
+        "id": 1,
+        "category_id": 1,
+        "year": 2025,
+        "month": 6,
+        "amount": "300.00",
+        "created_at": "2025-06-01T00:00:00",
+        "updated_at": "2025-06-01T00:00:00",
+        "category": {
+          "id": 1,
+          "name": "Food",
+          "description": "Groceries and eating out"
+        }
+      }
+    ],
+    "total": 1,
+    "page": 1,
+    "size": 10,
+    "pages": 1
+  },
+  "message": null
+}
 ```
 
 #### GET /budgets/{id}
@@ -640,18 +714,22 @@ Retrieve a specific budget by ID.
 
 ```json
 {
-  "id": 1,
-  "category_id": 1,
-  "year": 2025,
-  "month": 6,
-  "amount": "300.00",
-  "created_at": "2025-06-01T00:00:00",
-  "updated_at": "2025-06-01T00:00:00",
-  "category": {
+  "status": "success",
+  "data": {
     "id": 1,
-    "name": "Food",
-    "description": "Groceries and eating out"
-  }
+    "category_id": 1,
+    "year": 2025,
+    "month": 6,
+    "amount": "300.00",
+    "created_at": "2025-06-01T00:00:00",
+    "updated_at": "2025-06-01T00:00:00",
+    "category": {
+      "id": 1,
+      "name": "Food",
+      "description": "Groceries and eating out"
+    }
+  },
+  "message": null
 }
 ```
 
@@ -674,18 +752,22 @@ Create a new budget.
 
 ```json
 {
-  "id": 2,
-  "category_id": 2,
-  "year": 2025,
-  "month": 6,
-  "amount": "150.00",
-  "created_at": "2025-06-12T12:00:00",
-  "updated_at": "2025-06-12T12:00:00",
-  "category": {
+  "status": "success",
+  "data": {
     "id": 2,
-    "name": "Transportation",
-    "description": "Public transport and fuel"
-  }
+    "category_id": 2,
+    "year": 2025,
+    "month": 6,
+    "amount": "150.00",
+    "created_at": "2025-06-12T12:00:00",
+    "updated_at": "2025-06-12T12:00:00",
+    "category": {
+      "id": 2,
+      "name": "Transportation",
+      "description": "Public transport and fuel"
+    }
+  },
+  "message": "Budget created successfully"
 }
 ```
 
@@ -709,18 +791,22 @@ Update an existing budget.
 
 ```json
 {
-  "id": 2,
-  "category_id": 2,
-  "year": 2025,
-  "month": 6,
-  "amount": "200.00",
-  "created_at": "2025-06-12T12:00:00",
-  "updated_at": "2025-06-12T12:15:00",
-  "category": {
+  "status": "success",
+  "data": {
     "id": 2,
-    "name": "Transportation",
-    "description": "Public transport and fuel"
-  }
+    "category_id": 2,
+    "year": 2025,
+    "month": 6,
+    "amount": "200.00",
+    "created_at": "2025-06-12T12:00:00",
+    "updated_at": "2025-06-12T12:15:00",
+    "category": {
+      "id": 2,
+      "name": "Transportation",
+      "description": "Public transport and fuel"
+    }
+  },
+  "message": "Budget updated successfully"
 }
 ```
 
@@ -736,6 +822,8 @@ Delete a budget.
 
 ```json
 {
+  "status": "success",
+  "data": null,
   "message": "Budget deleted successfully"
 }
 ```
@@ -752,22 +840,35 @@ Get budget status for a specific month, showing planned vs. actual spending.
 **Response:**
 
 ```json
-[
-  {
-    "category_id": 1,
-    "category_name": "Food",
-    "budget_amount": "300.00",
-    "total_spent": "78.49",
-    "percent": 26.16
+{
+  "status": "success",
+  "data": {
+    "summary": {
+      "total_budget": "500.00",
+      "total_spent": "90.49",
+      "percent": 18.1
+    },
+    "categories": [
+      {
+        "category_id": 1,
+        "category_name": "Food",
+        "budget_amount": "300.00",
+        "total_spent": "78.49",
+        "percent": 26.16,
+        "status": "on_track"
+      },
+      {
+        "category_id": 2,
+        "category_name": "Transportation",
+        "budget_amount": "200.00",
+        "total_spent": "12.00",
+        "percent": 6.0,
+        "status": "on_track"
+      }
+    ]
   },
-  {
-    "category_id": 2,
-    "category_name": "Transportation",
-    "budget_amount": "200.00",
-    "total_spent": "12.00",
-    "percent": 6.0
-  }
-]
+  "message": null
+}
 ```
 
 ### Accounts
@@ -786,22 +887,32 @@ Retrieve all accounts.
 **Response:**
 
 ```json
-[
-  {
-    "id": 1,
-    "name": "Cash",
-    "initial_balance": "500.00",
-    "created_at": "2025-06-01T00:00:00",
-    "updated_at": "2025-06-01T00:00:00"
+{
+  "status": "success",
+  "data": {
+    "items": [
+      {
+        "id": 1,
+        "name": "Cash",
+        "initial_balance": "500.00",
+        "created_at": "2025-06-01T00:00:00",
+        "updated_at": "2025-06-01T00:00:00"
+      },
+      {
+        "id": 2,
+        "name": "Bank Account",
+        "initial_balance": "2500.00",
+        "created_at": "2025-06-01T00:00:00",
+        "updated_at": "2025-06-01T00:00:00"
+      }
+    ],
+    "total": 2,
+    "page": 1,
+    "size": 10,
+    "pages": 1
   },
-  {
-    "id": 2,
-    "name": "Bank Account",
-    "initial_balance": "2500.00",
-    "created_at": "2025-06-01T00:00:00",
-    "updated_at": "2025-06-01T00:00:00"
-  }
-]
+  "message": null
+}
 ```
 
 #### GET /accounts/{id}
@@ -816,11 +927,15 @@ Retrieve a specific account by ID.
 
 ```json
 {
-  "id": 1,
-  "name": "Cash",
-  "initial_balance": "500.00",
-  "created_at": "2025-06-01T00:00:00",
-  "updated_at": "2025-06-01T00:00:00"
+  "status": "success",
+  "data": {
+    "id": 1,
+    "name": "Cash",
+    "initial_balance": "500.00",
+    "created_at": "2025-06-01T00:00:00",
+    "updated_at": "2025-06-01T00:00:00"
+  },
+  "message": null
 }
 ```
 
@@ -841,11 +956,15 @@ Create a new account.
 
 ```json
 {
-  "id": 4,
-  "name": "Savings Account",
-  "initial_balance": "5000.00",
-  "created_at": "2025-06-12T13:00:00",
-  "updated_at": "2025-06-12T13:00:00"
+  "status": "success",
+  "data": {
+    "id": 4,
+    "name": "Savings Account",
+    "initial_balance": "5000.00",
+    "created_at": "2025-06-12T13:00:00",
+    "updated_at": "2025-06-12T13:00:00"
+  },
+  "message": "Account created successfully"
 }
 ```
 
@@ -870,11 +989,15 @@ Update an existing account.
 
 ```json
 {
-  "id": 4,
-  "name": "Savings Account (High Interest)",
-  "initial_balance": "5500.00",
-  "created_at": "2025-06-12T13:00:00",
-  "updated_at": "2025-06-12T13:15:00"
+  "status": "success",
+  "data": {
+    "id": 4,
+    "name": "Savings Account (High Interest)",
+    "initial_balance": "5500.00",
+    "created_at": "2025-06-12T13:00:00",
+    "updated_at": "2025-06-12T13:15:00"
+  },
+  "message": "Account updated successfully"
 }
 ```
 
@@ -890,6 +1013,8 @@ Delete an account.
 
 ```json
 {
+  "status": "success",
+  "data": null,
   "message": "Account deleted successfully"
 }
 ```
@@ -910,20 +1035,30 @@ Retrieve all tags.
 **Response:**
 
 ```json
-[
-  {
-    "id": 1,
-    "name": "Essential",
-    "created_at": "2025-06-01T00:00:00",
-    "updated_at": "2025-06-01T00:00:00"
+{
+  "status": "success",
+  "data": {
+    "items": [
+      {
+        "id": 1,
+        "name": "Essential",
+        "created_at": "2025-06-01T00:00:00",
+        "updated_at": "2025-06-01T00:00:00"
+      },
+      {
+        "id": 2,
+        "name": "Luxury",
+        "created_at": "2025-06-01T00:00:00",
+        "updated_at": "2025-06-01T00:00:00"
+      }
+    ],
+    "total": 2,
+    "page": 1,
+    "size": 10,
+    "pages": 1
   },
-  {
-    "id": 2,
-    "name": "Luxury",
-    "created_at": "2025-06-01T00:00:00",
-    "updated_at": "2025-06-01T00:00:00"
-  }
-]
+  "message": null
+}
 ```
 
 #### GET /tags/{id}
@@ -938,10 +1073,14 @@ Retrieve a specific tag by ID.
 
 ```json
 {
-  "id": 1,
-  "name": "Essential",
-  "created_at": "2025-06-01T00:00:00",
-  "updated_at": "2025-06-01T00:00:00"
+  "status": "success",
+  "data": {
+    "id": 1,
+    "name": "Essential",
+    "created_at": "2025-06-01T00:00:00",
+    "updated_at": "2025-06-01T00:00:00"
+  },
+  "message": null
 }
 ```
 
@@ -961,10 +1100,14 @@ Create a new tag.
 
 ```json
 {
-  "id": 5,
-  "name": "Travel",
-  "created_at": "2025-06-12T14:00:00",
-  "updated_at": "2025-06-12T14:00:00"
+  "status": "success",
+  "data": {
+    "id": 5,
+    "name": "Travel",
+    "created_at": "2025-06-12T14:00:00",
+    "updated_at": "2025-06-12T14:00:00"
+  },
+  "message": "Tag created successfully"
 }
 ```
 
@@ -988,10 +1131,14 @@ Update an existing tag.
 
 ```json
 {
-  "id": 5,
-  "name": "Travel & Vacation",
-  "created_at": "2025-06-12T14:00:00",
-  "updated_at": "2025-06-12T14:15:00"
+  "status": "success",
+  "data": {
+    "id": 5,
+    "name": "Travel & Vacation",
+    "created_at": "2025-06-12T14:00:00",
+    "updated_at": "2025-06-12T14:15:00"
+  },
+  "message": "Tag updated successfully"
 }
 ```
 
@@ -1007,6 +1154,8 @@ Delete a tag.
 
 ```json
 {
+  "status": "success",
+  "data": null,
   "message": "Tag deleted successfully"
 }
 ```
@@ -1027,24 +1176,34 @@ Retrieve all recurring expenses.
 **Response:**
 
 ```json
-[
-  {
-    "id": 1,
-    "name": "Monthly Rent",
-    "amount": "800.00",
-    "category_id": 3,
-    "interval": "monthly",
-    "next_date": "2025-07-01",
-    "end_date": null,
-    "created_at": "2025-06-01T00:00:00",
-    "updated_at": "2025-06-01T00:00:00",
-    "category": {
-      "id": 3,
-      "name": "Housing",
-      "description": "Rent, mortgage, and utilities"
-    }
-  }
-]
+{
+  "status": "success",
+  "data": {
+    "items": [
+      {
+        "id": 1,
+        "name": "Monthly Rent",
+        "amount": "800.00",
+        "category_id": 3,
+        "interval": "monthly",
+        "next_date": "2025-07-01",
+        "end_date": null,
+        "created_at": "2025-06-01T00:00:00",
+        "updated_at": "2025-06-01T00:00:00",
+        "category": {
+          "id": 3,
+          "name": "Housing",
+          "description": "Rent, mortgage, and utilities"
+        }
+      }
+    ],
+    "total": 1,
+    "page": 1,
+    "size": 10,
+    "pages": 1
+  },
+  "message": null
+}
 ```
 
 #### GET /recurring/{id}
@@ -1059,20 +1218,24 @@ Retrieve a specific recurring expense by ID.
 
 ```json
 {
-  "id": 1,
-  "name": "Monthly Rent",
-  "amount": "800.00",
-  "category_id": 3,
-  "interval": "monthly",
-  "next_date": "2025-07-01",
-  "end_date": null,
-  "created_at": "2025-06-01T00:00:00",
-  "updated_at": "2025-06-01T00:00:00",
-  "category": {
-    "id": 3,
-    "name": "Housing",
-    "description": "Rent, mortgage, and utilities"
-  }
+  "status": "success",
+  "data": {
+    "id": 1,
+    "name": "Monthly Rent",
+    "amount": "800.00",
+    "category_id": 3,
+    "interval": "monthly",
+    "next_date": "2025-07-01",
+    "end_date": null,
+    "created_at": "2025-06-01T00:00:00",
+    "updated_at": "2025-06-01T00:00:00",
+    "category": {
+      "id": 3,
+      "name": "Housing",
+      "description": "Rent, mortgage, and utilities"
+    }
+  },
+  "message": null
 }
 ```
 
@@ -1097,20 +1260,24 @@ Create a new recurring expense.
 
 ```json
 {
-  "id": 4,
-  "name": "Internet Subscription",
-  "amount": "59.99",
-  "category_id": 3,
-  "interval": "monthly",
-  "next_date": "2025-07-15",
-  "end_date": null,
-  "created_at": "2025-06-12T15:00:00",
-  "updated_at": "2025-06-12T15:00:00",
-  "category": {
-    "id": 3,
-    "name": "Housing",
-    "description": "Rent, mortgage, and utilities"
-  }
+  "status": "success",
+  "data": {
+    "id": 4,
+    "name": "Internet Subscription",
+    "amount": "59.99",
+    "category_id": 3,
+    "interval": "monthly",
+    "next_date": "2025-07-15",
+    "end_date": null,
+    "created_at": "2025-06-12T15:00:00",
+    "updated_at": "2025-06-12T15:00:00",
+    "category": {
+      "id": 3,
+      "name": "Housing",
+      "description": "Rent, mortgage, and utilities"
+    }
+  },
+  "message": "Recurring expense created successfully"
 }
 ```
 
@@ -1136,20 +1303,24 @@ Update an existing recurring expense.
 
 ```json
 {
-  "id": 4,
-  "name": "Internet Subscription",
-  "amount": "64.99",
-  "category_id": 3,
-  "interval": "monthly",
-  "next_date": "2025-07-20",
-  "end_date": null,
-  "created_at": "2025-06-12T15:00:00",
-  "updated_at": "2025-06-12T15:15:00",
-  "category": {
-    "id": 3,
-    "name": "Housing",
-    "description": "Rent, mortgage, and utilities"
-  }
+  "status": "success",
+  "data": {
+    "id": 4,
+    "name": "Internet Subscription",
+    "amount": "64.99",
+    "category_id": 3,
+    "interval": "monthly",
+    "next_date": "2025-07-20",
+    "end_date": null,
+    "created_at": "2025-06-12T15:00:00",
+    "updated_at": "2025-06-12T15:15:00",
+    "category": {
+      "id": 3,
+      "name": "Housing",
+      "description": "Rent, mortgage, and utilities"
+    }
+  },
+  "message": "Recurring expense updated successfully"
 }
 ```
 
@@ -1165,6 +1336,8 @@ Delete a recurring expense.
 
 ```json
 {
+  "status": "success",
+  "data": null,
   "message": "Recurring expense deleted successfully"
 }
 ```
@@ -1176,118 +1349,118 @@ Generate expenses from due recurring expenses.
 **Response:**
 
 ```json
-[
-  {
-    "id": 10,
-    "amount": "800.00",
-    "date": "2025-06-01",
-    "description": "Auto-generated from recurring: Monthly Rent",
-    "category_id": 3,
-    "account_id": null,
-    "receipt_path": null,
-    "created_at": "2025-06-12T15:30:00",
-    "updated_at": "2025-06-12T15:30:00",
-    "category": {
-      "id": 3,
-      "name": "Housing",
-      "description": "Rent, mortgage, and utilities"
-    },
-    "account": null,
-    "tags": []
-  }
-]
+{
+  "status": "success",
+  "data": {
+    "generated": [
+      {
+        "id": 10,
+        "amount": "800.00",
+        "date": "2025-06-01",
+        "description": "Auto-generated from recurring: Monthly Rent",
+        "category": {
+          "id": 3,
+          "name": "Housing",
+          "description": "Rent, mortgage, and utilities"
+        },
+        "account": null,
+        "tags": [],
+        "receipt_path": null,
+        "created_at": "2025-06-12T15:30:00",
+        "updated_at": "2025-06-12T15:30:00"
+      }
+    ],
+    "total_generated": 1,
+    "next_generation_date": "2025-07-01"
+  },
+  "message": "Successfully generated recurring expenses"
+}
 ```
 
 ## Error Handling
 
-### Authentication Errors
-
-- **401 Unauthorized**: Invalid or expired token
-
-  ```json
-  {
-    "detail": "Could not validate credentials"
-  }
-  ```
-
-- **401 Unauthorized**: Invalid login credentials
-
-  ```json
-  {
-    "detail": "Incorrect username or password"
-  }
-  ```
-
-- **400 Bad Request**: Registration validation error
-  ```json
-  {
-    "detail": "Username already registered"
-  }
-  ```
-
-### Common Errors
-
-- **400 Bad Request**: Invalid input data
-- **404 Not Found**: Resource not found
-- **500 Internal Server Error**: Server error
-
-Each error response includes a detail message:
+All error responses follow the standard format:
 
 ```json
 {
-  "detail": "Error message describing what went wrong"
+  "status": "error",
+  "data": null,
+  "message": "Detailed error message"
 }
 ```
 
-## Security Best Practices
+### Common HTTP Status Codes
 
-1. **Password Security**
+- **400 Bad Request**: Invalid input data or validation error
+- **401 Unauthorized**: Authentication failed or invalid token
+- **403 Forbidden**: Permission denied
+- **404 Not Found**: Resource not found
+- **409 Conflict**: Resource conflict (e.g., duplicate unique field)
+- **422 Unprocessable Entity**: Validation error
+- **429 Too Many Requests**: Rate limit exceeded
+- **500 Internal Server Error**: Server error
 
-   - Passwords must be at least 8 characters
-   - Should include numbers and special characters
-   - Never send passwords in plain text
+### Error Examples
 
-2. **Token Security**
+**Authentication Error (401):**
 
-   - Store tokens securely
-   - Never share tokens
-   - Tokens expire after 30 minutes
+```json
+{
+  "status": "error",
+  "data": null,
+  "message": "Invalid or expired token"
+}
+```
 
-3. **API Security**
-   - Use HTTPS in production
-   - Implement rate limiting
-   - Regular security audits
+**Validation Error (422):**
 
-## Development Guide
+```json
+{
+  "status": "error",
+  "data": {
+    "errors": [
+      {
+        "field": "amount",
+        "message": "Amount must be greater than 0"
+      },
+      {
+        "field": "date",
+        "message": "Date cannot be in the future"
+      }
+    ]
+  },
+  "message": "Validation failed"
+}
+```
 
-### Authentication Implementation
+**Rate Limit Error (429):**
 
-1. **Setup Environment**
+```json
+{
+  "status": "error",
+  "data": {
+    "retry_after": 60
+  },
+  "message": "Rate limit exceeded. Please try again in 60 seconds."
+}
+```
 
-   ```bash
-   # Add to .env file
-   SECRET_KEY="your-secret-key-here"
-   ACCESS_TOKEN_EXPIRE_MINUTES=30
-   ```
+## Rate Limiting
 
-2. **Making Authenticated Requests**
+The API implements rate limiting to ensure fair usage:
 
-   ```python
-   import requests
+- Authentication endpoints: 5 requests per minute
+- Other endpoints: 60 requests per minute per authenticated user
 
-   # Login
-   response = requests.post(
-       "http://localhost:8000/auth/token",
-       data={"username": "johndoe", "password": "password123"}
-   )
-   token = response.json()["access_token"]
+Rate limit response headers:
 
-   # Use token in subsequent requests
-   headers = {"Authorization": f"Bearer {token}"}
-   response = requests.get(
-       "http://localhost:8000/expenses",
-       headers=headers
-   )
-   ```
+```
+X-RateLimit-Limit: 60
+X-RateLimit-Remaining: 59
+X-RateLimit-Reset: 1623567890
+```
 
-[... rest of the existing documentation ...]
+When rate limit is exceeded:
+
+- Status code: 429 Too Many Requests
+- Response includes retry_after value in seconds
