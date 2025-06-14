@@ -18,9 +18,11 @@
   - [Accounts](#accounts)
   - [Tags](#tags)
   - [Recurring Expenses](#recurring-expenses)
+  - [Statistics & Reports](#statistics--reports)
 - [Data Models](#data-models)
 - [Development Guide](#development-guide)
-- [Troubleshooting](#troubleshooting)
+- [Rate Limiting](#rate-limiting)
+- [Security](#security)
 
 ## Setup and Installation
 
@@ -1464,3 +1466,307 @@ When rate limit is exceeded:
 
 - Status code: 429 Too Many Requests
 - Response includes retry_after value in seconds
+
+## API Base URL
+
+```
+http://localhost:8000/api/v1
+```
+
+All endpoints are prefixed with `/api/v1` for versioning.
+
+## Common Headers
+
+All requests should include:
+
+```
+Content-Type: application/json
+Accept: application/json
+```
+
+For authenticated endpoints, add:
+
+```
+Authorization: Bearer <your-token>
+```
+
+## Health Check
+
+### GET /health
+
+Check API health status.
+
+**Response:**
+
+```json
+{
+  "status": "success",
+  "data": {
+    "status": "ok",
+    "version": "1.0.0",
+    "timestamp": "2025-06-14T10:00:00.000Z"
+  },
+  "message": null
+}
+```
+
+### GET /health/ping
+
+Quick connection test.
+
+**Response:**
+
+```json
+{
+  "status": "success",
+  "data": {
+    "ping": "pong"
+  },
+  "message": null
+}
+```
+
+## Expenses
+
+### Query Parameters for GET /expenses/
+
+| Parameter   | Type   | Description                            | Default |
+| ----------- | ------ | -------------------------------------- | ------- |
+| page        | int    | Page number                            | 1       |
+| size        | int    | Items per page                         | 10      |
+| sort        | string | Sort field (amount,date,description)   | date    |
+| order       | string | Sort order (asc,desc)                  | desc    |
+| category_id | int    | Filter by category                     | null    |
+| account_id  | int    | Filter by account                      | null    |
+| start_date  | date   | Filter expenses from date (YYYY-MM-DD) | null    |
+| end_date    | date   | Filter expenses to date (YYYY-MM-DD)   | null    |
+| tag_ids     | array  | Filter by tags                         | []      |
+
+### GET /expenses/summary
+
+Get expense summary statistics.
+
+**Query Parameters:**
+
+- `start_date` (optional): Start date (YYYY-MM-DD)
+- `end_date` (optional): End date (YYYY-MM-DD)
+- `category_id` (optional): Filter by category
+
+**Response:**
+
+```json
+{
+  "status": "success",
+  "data": {
+    "total_amount": "1250.75",
+    "average_amount": "125.08",
+    "count": 10,
+    "by_category": [
+      {
+        "category_id": 1,
+        "category_name": "Food",
+        "total_amount": "450.25",
+        "count": 4
+      }
+    ],
+    "by_tag": [
+      {
+        "tag_id": 1,
+        "tag_name": "Essential",
+        "total_amount": "800.50",
+        "count": 6
+      }
+    ],
+    "period": {
+      "start_date": "2025-06-01",
+      "end_date": "2025-06-14"
+    }
+  },
+  "message": null
+}
+```
+
+## Budgets
+
+### GET /budgets/overview
+
+Get overview of all budgets and spending.
+
+**Query Parameters:**
+
+- `year` (required): Year for budget overview
+- `month` (required): Month for budget overview (1-12)
+
+**Response:**
+
+```json
+{
+  "status": "success",
+  "data": {
+    "summary": {
+      "total_budget": "2000.00",
+      "total_spent": "1250.75",
+      "remaining": "749.25",
+      "percent_used": 62.54
+    },
+    "categories": [
+      {
+        "category_id": 1,
+        "category_name": "Food",
+        "budget_amount": "500.00",
+        "spent_amount": "450.25",
+        "remaining": "49.75",
+        "percent_used": 90.05,
+        "status": "warning"
+      }
+    ],
+    "period": {
+      "year": 2025,
+      "month": 6
+    }
+  },
+  "message": null
+}
+```
+
+## Recurring Expenses
+
+### GET /recurring/upcoming
+
+Get list of upcoming recurring expenses.
+
+**Query Parameters:**
+
+- `days` (optional): Number of days to look ahead (default: 30)
+
+**Response:**
+
+```json
+{
+  "status": "success",
+  "data": {
+    "items": [
+      {
+        "id": 1,
+        "name": "Monthly Rent",
+        "amount": "800.00",
+        "next_date": "2025-07-01",
+        "category": {
+          "id": 3,
+          "name": "Housing"
+        },
+        "days_until": 17
+      }
+    ],
+    "total_upcoming": "800.00",
+    "count": 1
+  },
+  "message": null
+}
+```
+
+## Statistics & Reports
+
+### GET /statistics/monthly
+
+Get monthly expense statistics.
+
+**Query Parameters:**
+
+- `year` (required): Year for statistics
+- `month` (required): Month for statistics (1-12)
+
+**Response:**
+
+```json
+{
+  "status": "success",
+  "data": {
+    "total_expenses": "1250.75",
+    "average_per_day": "89.34",
+    "highest_day": {
+      "date": "2025-06-10",
+      "amount": "250.00"
+    },
+    "by_category": [
+      {
+        "category_name": "Food",
+        "total": "450.25",
+        "percent": 36.0
+      }
+    ],
+    "by_tag": [
+      {
+        "tag_name": "Essential",
+        "total": "800.50",
+        "percent": 64.0
+      }
+    ],
+    "daily_totals": [
+      {
+        "date": "2025-06-01",
+        "amount": "125.00"
+      }
+    ]
+  },
+  "message": null
+}
+```
+
+### GET /statistics/trends
+
+Get expense trends over time.
+
+**Query Parameters:**
+
+- `period` (optional): "daily", "weekly", or "monthly" (default: "monthly")
+- `months` (optional): Number of months of history (default: 12)
+
+**Response:**
+
+```json
+{
+  "status": "success",
+  "data": {
+    "trends": [
+      {
+        "period": "2025-06",
+        "total": "1250.75",
+        "change_percent": 5.2
+      }
+    ],
+    "averages": {
+      "last_3_months": "1150.25",
+      "last_6_months": "1100.50",
+      "last_12_months": "1050.75"
+    }
+  },
+  "message": null
+}
+```
+
+## Security
+
+### Password Requirements
+
+- Minimum 8 characters
+- At least one uppercase letter
+- At least one lowercase letter
+- At least one number
+- At least one special character
+
+### Rate Limiting
+
+Default limits per IP address:
+
+- Authentication endpoints: 5 requests per minute
+- Other endpoints: 60 requests per minute
+- Burst: 5 requests
+
+Rate limit response headers:
+
+```
+X-RateLimit-Limit: 60
+X-RateLimit-Remaining: 59
+X-RateLimit-Reset: 1623567890
+```
