@@ -5,12 +5,12 @@
 - [Setup and Installation](#setup-and-installation)
 - [Project Structure](#project-structure)
 - [Running the Project](#running-the-project)
-- [Introduction](#introduction)
-- [API Base URL](#api-base-url)
 - [Authentication](#authentication)
+- [API Base URL](#api-base-url)
 - [Common Parameters](#common-parameters)
 - [Error Handling](#error-handling)
 - [API Endpoints](#api-endpoints)
+  - [Authentication](#authentication-endpoints)
   - [Health Check](#health-check)
   - [Categories](#categories)
   - [Expenses](#expenses)
@@ -125,52 +125,116 @@ backend/
    curl http://localhost:8000/health
    ```
 
-## Introduction
-
-The Expense Tracker API allows you to manage personal finances by tracking expenses, setting budgets, and monitoring spending patterns. This RESTful API is built with FastAPI and provides comprehensive endpoints for expense management.
-
-## API Base URL
-
-```
-http://localhost:8000
-```
-
-API documentation can be accessed at:
-
-```
-http://localhost:8000/docs
-```
-
 ## Authentication
 
-The API currently does not implement authentication. User management functionality is included in the models but not exposed through endpoints. Future versions will include proper authentication.
+The API uses JWT (JSON Web Token) for authentication. To access protected endpoints, you need to:
 
-## Common Parameters
+1. Register a new user account
+2. Login to get an access token
+3. Include the token in the Authorization header of subsequent requests
 
-The following parameters are common across multiple endpoints:
+### Authentication Flow
 
-- `skip`: Number of records to skip (pagination)
-- `limit`: Maximum number of records to return (pagination)
+1. **Register**: Create a new user account
+   - Endpoint: POST /auth/register
+   - No authentication required
+2. **Login**: Get access token
+   - Endpoint: POST /auth/token
+   - Use credentials to get JWT token
+3. **Access Protected Resources**:
+   - Include token in Authorization header
+   - Format: `Authorization: Bearer <your-token>`
 
-## Error Handling
+### Token Format
 
-The API uses standard HTTP status codes to indicate the success or failure of a request:
+```
+Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
 
-- `200 OK`: The request succeeded
-- `201 Created`: A new resource was created successfully
-- `400 Bad Request`: The request was invalid or cannot be served
-- `404 Not Found`: The requested resource does not exist
-- `500 Internal Server Error`: An error occurred on the server
+### Token Expiration
 
-Error responses include a JSON object with a `detail` field explaining the error:
+- Access tokens expire after 30 minutes
+- You need to login again to get a new token
+
+## API Endpoints
+
+### Authentication Endpoints
+
+#### POST /auth/register
+
+Register a new user account.
+
+**Request Body:**
 
 ```json
 {
-  "detail": "Error message describing what went wrong"
+  "username": "johndoe",
+  "email": "john@example.com",
+  "password": "strongpassword123"
 }
 ```
 
-## API Endpoints
+**Response:**
+
+```json
+{
+  "id": 1,
+  "username": "johndoe",
+  "email": "john@example.com",
+  "created_at": "2025-06-13T10:00:00"
+}
+```
+
+#### POST /auth/token
+
+Login to get access token.
+
+**Request Body:**
+
+```json
+{
+  "username": "johndoe",
+  "password": "strongpassword123"
+}
+```
+
+**Response:**
+
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "bearer"
+}
+```
+
+#### GET /auth/me
+
+Get current user information.
+
+**Headers:**
+
+```
+Authorization: Bearer <your-token>
+```
+
+**Response:**
+
+```json
+{
+  "id": 1,
+  "username": "johndoe",
+  "email": "john@example.com",
+  "created_at": "2025-06-13T10:00:00"
+}
+```
+
+### Protected Endpoints
+
+All endpoints below require authentication. Include the JWT token in the Authorization header:
+
+```
+Authorization: Bearer <your-token>
+```
 
 ### Health Check
 
@@ -1134,152 +1198,96 @@ Generate expenses from due recurring expenses.
 ]
 ```
 
-## Data Models
+## Error Handling
 
-### Category
+### Authentication Errors
 
-- `id`: Integer - Unique identifier
-- `name`: String - Category name (unique)
-- `description`: String (optional) - Description of the category
-- `created_at`: DateTime - When the category was created
-- `updated_at`: DateTime - When the category was last updated
+- **401 Unauthorized**: Invalid or expired token
 
-### Account
+  ```json
+  {
+    "detail": "Could not validate credentials"
+  }
+  ```
 
-- `id`: Integer - Unique identifier
-- `name`: String - Account name (unique)
-- `initial_balance`: Decimal - Starting balance for the account
-- `created_at`: DateTime - When the account was created
-- `updated_at`: DateTime - When the account was last updated
+- **401 Unauthorized**: Invalid login credentials
 
-### Tag
+  ```json
+  {
+    "detail": "Incorrect username or password"
+  }
+  ```
 
-- `id`: Integer - Unique identifier
-- `name`: String - Tag name (unique)
-- `created_at`: DateTime - When the tag was created
-- `updated_at`: DateTime - When the tag was last updated
+- **400 Bad Request**: Registration validation error
+  ```json
+  {
+    "detail": "Username already registered"
+  }
+  ```
 
-### Expense
+### Common Errors
 
-- `id`: Integer - Unique identifier
-- `amount`: Decimal - Expense amount (positive value)
-- `date`: Date - When the expense occurred
-- `description`: String (optional) - Description of the expense
-- `category_id`: Integer - Reference to the category
-- `account_id`: Integer (optional) - Reference to the account
-- `receipt_path`: String (optional) - Path to receipt image/file
-- `created_at`: DateTime - When the expense was created
-- `updated_at`: DateTime - When the expense was last updated
-- `category`: Category - Related category object
-- `account`: Account (optional) - Related account object
-- `tags`: Array of Tag - Related tags
+- **400 Bad Request**: Invalid input data
+- **404 Not Found**: Resource not found
+- **500 Internal Server Error**: Server error
 
-### Budget
+Each error response includes a detail message:
 
-- `id`: Integer - Unique identifier
-- `category_id`: Integer - Reference to the category
-- `year`: Integer - Budget year
-- `month`: Integer - Budget month (1-12)
-- `amount`: Decimal - Budget amount (positive value)
-- `created_at`: DateTime - When the budget was created
-- `updated_at`: DateTime - When the budget was last updated
-- `category`: Category - Related category object
+```json
+{
+  "detail": "Error message describing what went wrong"
+}
+```
 
-### RecurringExpense
+## Security Best Practices
 
-- `id`: Integer - Unique identifier
-- `name`: String - Name of the recurring expense
-- `amount`: Decimal - Expense amount (positive value)
-- `category_id`: Integer - Reference to the category
-- `interval`: String - Frequency ("daily", "weekly", "biweekly", "monthly", "quarterly", "yearly")
-- `next_date`: Date - Next occurrence date
-- `end_date`: Date (optional) - When to stop generating expenses
-- `created_at`: DateTime - When the recurring expense was created
-- `updated_at`: DateTime - When the recurring expense was last updated
-- `category`: Category - Related category object
+1. **Password Security**
 
-### BudgetStatus
+   - Passwords must be at least 8 characters
+   - Should include numbers and special characters
+   - Never send passwords in plain text
 
-- `category_id`: Integer - Reference to the category
-- `category_name`: String - Name of the category
-- `budget_amount`: Decimal - Budgeted amount
-- `total_spent`: Decimal - Actual spent amount
-- `percent`: Float - Percentage of budget used
+2. **Token Security**
+
+   - Store tokens securely
+   - Never share tokens
+   - Tokens expire after 30 minutes
+
+3. **API Security**
+   - Use HTTPS in production
+   - Implement rate limiting
+   - Regular security audits
 
 ## Development Guide
 
-### Code Organization
+### Authentication Implementation
 
-- **Routes**: Add new endpoints in `app/routers/`
-- **Models**: Define database models in `app/models.py`
-- **Schemas**: Define request/response schemas in `app/schemas.py`
-- **CRUD**: Implement database operations in `app/crud.py`
-
-### Best Practices
-
-1. **Code Style**
-
-   - Follow PEP 8
-   - Use type hints
-   - Document functions with docstrings
-
-2. **Database**
-
-   - Use SQLAlchemy ORM
-   - Create migrations for schema changes
-   - Test queries for performance
-
-3. **API Design**
-   - Use appropriate HTTP methods
-   - Return proper status codes
-   - Validate input data
-   - Handle errors gracefully
-
-### Testing
-
-```bash
-# Run tests
-pytest
-
-# Run with coverage
-pytest --cov=app
-```
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Database Connection Errors**
-   ```
-   ERROR: Could not connect to PostgreSQL
-   ```
-   **Solutions**:
-   - Check if PostgreSQL is running
-   - Verify database credentials in `.env`
-   - Ensure database exists
-2. **Missing Dependencies**
-
-   ```
-   ImportError: No module named 'fastapi'
-   ```
-
-   **Solution**:
+1. **Setup Environment**
 
    ```bash
-   pip install -r requirements.txt
+   # Add to .env file
+   SECRET_KEY="your-secret-key-here"
+   ACCESS_TOKEN_EXPIRE_MINUTES=30
    ```
 
-3. **Migration Errors**
-   ```
-   ERROR: Target database is not up to date
-   ```
-   **Solution**:
-   ```bash
-   python -m migrations.create_tables --force
+2. **Making Authenticated Requests**
+
+   ```python
+   import requests
+
+   # Login
+   response = requests.post(
+       "http://localhost:8000/auth/token",
+       data={"username": "johndoe", "password": "password123"}
+   )
+   token = response.json()["access_token"]
+
+   # Use token in subsequent requests
+   headers = {"Authorization": f"Bearer {token}"}
+   response = requests.get(
+       "http://localhost:8000/expenses",
+       headers=headers
+   )
    ```
 
-### Getting Help
-
-- Check the GitHub Issues
-- Join our Discord community
-- Email support: mm.rizqullah@gmail.com
+[... rest of the existing documentation ...]
