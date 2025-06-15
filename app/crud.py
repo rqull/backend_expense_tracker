@@ -263,8 +263,23 @@ def get_budget_status(db: Session, year: int, month: int):
         models.Budget.month == month
     ).all()
 
+    # Calculate overall total budget for the month/year
+    total_budget_overall = db.query(func.sum(models.Budget.amount)).filter(
+        models.Budget.year == year,
+        models.Budget.month == month
+    ).scalar() or 0
+
+    # Calculate total expenses for the specified month and year across all categories
+    total_spent_overall = db.query(func.sum(models.Expense.amount)).filter(
+        extract('year', models.Expense.date) == year,
+        extract('month', models.Expense.date) == month
+    ).scalar() or 0
+
+    # Calculate overall percentage spent
+    overall_percent = (float(total_spent_overall) / float(total_budget_overall)) * 100 if total_budget_overall > 0 else 0
+
     # For each budget, calculate how much has been spent
-    result = []
+    categories_status = []
     for budget, category_name in budgets:
         # Calculate total spent for this category in this month/year
         total_spent = db.query(func.sum(models.Expense.amount)).filter(
@@ -277,15 +292,21 @@ def get_budget_status(db: Session, year: int, month: int):
         percent = (float(total_spent) / float(budget.amount)) * 100 if budget.amount > 0 else 0
 
         # Add to result
-        result.append(schemas.BudgetStatus(
-            category_id=budget.category_id,
-            category_name=category_name,
-            budget_amount=budget.amount,
-            total_spent=total_spent,
-            percent=percent
+        categories_status.append(schemas.BudgetStatus(\
+            category_id=budget.category_id,\
+            category_name=category_name,\
+            budget_amount=str(budget.amount),\
+            total_spent=str(total_spent),\
+            percent=percent\
         ))
 
-    return result
+    return {\
+        "summary": {\
+            "total_budget": str(total_budget_overall),\
+            "percent": overall_percent\
+        },\
+        "categories": categories_status\
+    }
 
 # Account CRUD operations
 def get_account(db: Session, account_id: int):
@@ -533,16 +554,30 @@ def get_users(db: Session, skip: int = 0, limit: int = 100):
     return db.query(models.User).offset(skip).limit(limit).all()
 
 def create_user(db: Session, user: schemas.UserCreate, hashed_password: str):
-    db_user = models.User(
-        username=user.username,
-        email=user.email,
-        full_name=user.full_name,
-        hashed_password=hashed_password
-    )
-    db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
-    return db_user
+    try:
+        db_user = models.User(
+            username=user.username,
+            email=user.email,
+            full_name=user.full_name,
+            hashed_password=hashed_password,
+            is_active=user.is_active
+        )
+        db.add(db_user)
+        db.commit()
+        db.refresh(db_user)
+        return db_user
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=400,
+            detail="User with this username or email already exists"
+        )
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
 
 def update_user(db: Session, user_id: int, user: schemas.UserUpdate):
     db_user = get_user(db, user_id)
@@ -568,3 +603,102 @@ def delete_user(db: Session, user_id: int):
     db.delete(db_user)
     db.commit()
     return {"message": "User deleted successfully"}
+
+def get_expense_summary(
+    db: Session,
+    start_date: Optional[date] = None,
+    end_date: Optional[date] = None,
+    category_id: Optional[int] = None
+):
+    query = db.query(models.Expense)
+
+    if start_date:
+        query = query.filter(models.Expense.date >= start_date)
+    if end_date:
+        query = query.filter(models.Expense.date <= end_date)
+    if category_id:
+        query = query.filter(models.Expense.category_id == category_id)
+
+    # Get total amount and count
+    total_amount = query.with_entities(func.sum(models.Expense.amount)).scalar() or Decimal('0')
+    count = query.count()
+
+    # Calculate average
+    average_amount = total_amount / count if count > 0 else Decimal('0')
+
+    # Get summary by category
+    category_summary = db.query(
+        models.Category.id.label('category_id'),
+        models.Category.name.label('category_name'),
+        func.sum(models.Expense.amount).label('total_amount'),
+        func.count(models.Expense.id).label('count')
+    ).join(
+        models.Expense,
+        models.Expense.category_id == models.Category.id
+    )
+
+    if start_date:
+        category_summary = category_summary.filter(models.Expense.date >= start_date)
+    if end_date:
+        category_summary = category_summary.filter(models.Expense.date <= end_date)
+    if category_id:
+        category_summary = category_summary.filter(models.Category.id == category_id)
+
+    category_summary = category_summary.group_by(
+        models.Category.id,
+        models.Category.name
+    ).all()
+
+    # Get summary by tag
+    tag_summary = db.query(
+        models.Tag.id.label('tag_id'),
+        models.Tag.name.label('tag_name'),
+        func.sum(models.Expense.amount).label('total_amount'),
+        func.count(models.Expense.id).label('count')
+    ).join(
+        models.ExpenseTag,
+        models.ExpenseTag.tag_id == models.Tag.id
+    ).join(
+        models.Expense,
+        models.ExpenseTag.expense_id == models.Expense.id
+    )
+
+    if start_date:
+        tag_summary = tag_summary.filter(models.Expense.date >= start_date)
+    if end_date:
+        tag_summary = tag_summary.filter(models.Expense.date <= end_date)
+    if category_id:
+        tag_summary = tag_summary.filter(models.Expense.category_id == category_id)
+
+    tag_summary = tag_summary.group_by(
+        models.Tag.id,
+        models.Tag.name
+    ).all()
+
+    return {
+        "total_amount": str(total_amount),
+        "average_amount": str(average_amount),
+        "count": count,
+        "by_category": [
+            {
+                "category_id": item.category_id,
+                "category_name": item.category_name,
+                "total_amount": str(item.total_amount),
+                "count": item.count
+            }
+            for item in category_summary
+        ],
+        "by_tag": [
+            {
+                "tag_id": item.tag_id,
+                "tag_name": item.tag_name,
+                "total_amount": str(item.total_amount),
+                "count": item.count
+            }
+            for item in tag_summary
+        ],
+        "period": {
+            "start_date": start_date.isoformat() if start_date else None,
+            "end_date": end_date.isoformat() if end_date else None
+        }
+    }

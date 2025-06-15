@@ -41,6 +41,24 @@ def read_budgets(skip: int = 0, limit: int = 100, db: Session = Depends(get_db))
         }
     )
 
+@router.get("/stats")
+def read_budget_status(
+    year: int = Query(..., description="Year for budget status"),
+    month: int = Query(..., description="Month for budget status (1-12)"),
+    db: Session = Depends(get_db)
+):
+    if month < 1 or month > 12:
+        raise HTTPException(status_code=400, detail="Month must be between 1 and 12")
+    status_data = crud.get_budget_status(db=db, year=year, month=month)
+    return JSONResponse(
+        status_code=200,
+        content={
+            "status": "success",
+            "data": status_data,
+            "message": None
+        }
+    )
+
 @router.get("/{budget_id}")
 def read_budget(budget_id: int, db: Session = Depends(get_db)):
     db_budget = crud.get_budget(db, budget_id=budget_id)
@@ -76,23 +94,5 @@ def delete_budget(budget_id: int, db: Session = Depends(get_db)):
             "status": "success",
             "data": None,
             "message": "Budget deleted successfully"
-        }
-    )
-
-@router.get("/status/")
-def read_budget_status(
-    year: int = Query(..., description="Year for budget status"),
-    month: int = Query(..., description="Month for budget status (1-12)"),
-    db: Session = Depends(get_db)
-):
-    if month < 1 or month > 12:
-        raise HTTPException(status_code=400, detail="Month must be between 1 and 12")
-    status_data = crud.get_budget_status(db=db, year=year, month=month)
-    return JSONResponse(
-        status_code=200,
-        content={
-            "status": "success",
-            "data": [s for s in status_data],
-            "message": None
         }
     )

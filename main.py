@@ -19,21 +19,13 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# CORS middleware
-origins = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://localhost:8000",
-    "http://127.0.0.1:8000",
-]
-
+# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],  # Mengizinkan semua origin di development
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["*"]
 )
 
 # Request timing middleware
@@ -56,14 +48,14 @@ if os.getenv("DEBUG", "False").lower() == "true":
     Base.metadata.create_all(bind=engine)
 
 # Include routers with tags and prefixes
-app.include_router(auth.router)
-app.include_router(health.router)
-app.include_router(categories.router)
-app.include_router(expenses.router)
-app.include_router(budgets.router)
-app.include_router(accounts.router)
-app.include_router(tags.router)
-app.include_router(recurring.router)
+app.include_router(auth.router, prefix="/api/v1", tags=["Authentication"])
+app.include_router(health.router, prefix="/api/v1", tags=["Health"])
+app.include_router(categories.router, prefix="/api/v1", tags=["Categories"])
+app.include_router(expenses.router, prefix="/api/v1", tags=["Expenses"])
+app.include_router(budgets.router, prefix="/api/v1", tags=["Budgets"])
+app.include_router(accounts.router, prefix="/api/v1", tags=["Accounts"])
+app.include_router(tags.router, prefix="/api/v1", tags=["Tags"])
+app.include_router(recurring.router, prefix="/api/v1", tags=["Recurring"])
 
 @app.get("/")
 async def root():

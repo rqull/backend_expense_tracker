@@ -1,7 +1,18 @@
 from typing import List, Optional
 from datetime import date, datetime
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, validator, ConfigDict
 from decimal import Decimal
+
+# Base configuration for all models
+class BaseConfig:
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_encoders={
+            datetime: lambda v: v.isoformat(),
+            date: lambda v: v.isoformat(),
+            Decimal: lambda v: str(v)
+        }
+    )
 
 # Auth Schemas
 class Token(BaseModel):
@@ -30,8 +41,7 @@ class User(UserBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        orm_mode = True
+    model_config = BaseConfig.model_config
 
 # Category Schemas
 class CategoryBase(BaseModel):
@@ -50,8 +60,7 @@ class Category(CategoryBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        orm_mode = True
+    model_config = BaseConfig.model_config
 
 # Tag Schemas
 class TagBase(BaseModel):
@@ -68,8 +77,7 @@ class Tag(TagBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        orm_mode = True
+    model_config = BaseConfig.model_config
 
 # Account Schemas
 class AccountBase(BaseModel):
@@ -88,8 +96,7 @@ class Account(AccountBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        orm_mode = True
+    model_config = BaseConfig.model_config
 
 # Expense Schemas
 class ExpenseBase(BaseModel):
@@ -133,8 +140,7 @@ class Expense(ExpenseBase):
     account: Optional[Account] = None
     tags: List[Tag] = []
 
-    class Config:
-        orm_mode = True
+    model_config = BaseConfig.model_config
 
 # Budget Schemas
 class BudgetBase(BaseModel):
@@ -176,8 +182,7 @@ class Budget(BudgetBase):
     updated_at: datetime
     category: Category
 
-    class Config:
-        orm_mode = True
+    model_config = BaseConfig.model_config
 
 # Budget Status Schema for the budget status endpoint
 class BudgetStatus(BaseModel):
@@ -219,5 +224,4 @@ class RecurringExpense(RecurringExpenseBase):
     updated_at: datetime
     category: Category
 
-    class Config:
-        orm_mode = True
+    model_config = BaseConfig.model_config

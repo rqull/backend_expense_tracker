@@ -58,6 +58,28 @@ def read_expenses(
         }
     )
 
+@router.get("/stats")
+def get_expense_summary(
+    start_date: Optional[date] = None,
+    end_date: Optional[date] = None,
+    category_id: Optional[int] = None,
+    db: Session = Depends(get_db)
+):
+    summary = crud.get_expense_summary(
+        db,
+        start_date=start_date,
+        end_date=end_date,
+        category_id=category_id
+    )
+    return JSONResponse(
+        status_code=200,
+        content={
+            "status": "success",
+            "data": summary,
+            "message": None
+        }
+    )
+
 @router.get("/{expense_id}")
 def read_expense(expense_id: int, db: Session = Depends(get_db)):
     db_expense = crud.get_expense(db, expense_id=expense_id)
